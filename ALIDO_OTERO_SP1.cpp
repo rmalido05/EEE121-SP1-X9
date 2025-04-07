@@ -51,16 +51,17 @@ class FlashcardBST {
 
         Node* findDiffHelper(Node* currentNode, int difficulty) {   // Finds the node correspoding to input difficulty
             if (currentNode == nullptr) {
+                cout << 0 << endl;
                 return nullptr;
             }
             if(difficulty == get<0>(currentNode -> data)) {
-                cout << 0 << endl;          // For debugging purposes
+                cout << 7 << endl;          // For debugging purposes
                 return currentNode;
             } else if(difficulty < get<0>(currentNode -> data)) {
-                cout << 1 << endl;          // For debugging purposes
+                cout << 8 << endl;          // For debugging purposes
                 return findDiffHelper(currentNode -> left, difficulty);
             } else {
-                cout << 2 << endl;          // For debugging purposes
+                cout << 9 << endl;          // For debugging purposes
                 return findDiffHelper(currentNode -> right, difficulty);
             }
         }
@@ -82,6 +83,12 @@ class FlashcardSystem : public FlashcardBST {
         void addFlashcardHelper(int id, int difficulty, string question, char answer, vector<string> choices) {
             Flashcard flashcard = Flashcard(id, difficulty, question, answer, choices); // Instantiate flashcard
             Node* node = findDiff(difficulty);  // Instantiate difficulty node
+
+            // If the node doesn't exist, create it
+            if (node == nullptr) {
+                newDiff(difficulty);
+                node = findDiff(difficulty);    // Re-fetch the code after creating it
+            }
             get<1>(node->data).push(flashcard); // Push flashcard object into queue under difficulty node
         }
 
@@ -91,6 +98,7 @@ class FlashcardSystem : public FlashcardBST {
 
         queue<Flashcard> studySystem(int difficulty) {
             queue<Flashcard> flashcards = get<1>(findDiff(difficulty) -> data); // Find flashcard queue based on difficulty
+            cout << "study check\n";
             return flashcards;
         }
 
@@ -224,15 +232,16 @@ class FlashcardSystem : public FlashcardBST {
 
     void studyInterface() {
         int difficulty;
-        queue<Flashcard> flashcards = studySystem(difficulty);
         int correct = 0;
-        int size = flashcards.size();
 
         cout << "====================================================\n";
         cout << "----->[STUDY MODE]<-----\n";
         cout << endl;
         cout << "Select a difficulty: ";
         cin >> difficulty;
+
+        queue<Flashcard> flashcards = studySystem(difficulty);
+        int size = flashcards.size();
         
         for(int i = 0; i < size; i++) {
             string question = flashcards.front().question;
@@ -276,6 +285,7 @@ int main() {
     FlashcardSystem flash;
     FlashcardBST ez;
     ez.newDiff(1);
+    ez.newDiff(2);
     ez.newDiff(3);
     flash.menuInterface();
     return 0;
