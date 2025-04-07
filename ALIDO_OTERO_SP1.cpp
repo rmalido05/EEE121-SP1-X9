@@ -3,6 +3,7 @@
 #include <string>
 #include <tuple>
 #include <queue>
+#include <unordered_map>
 
 using namespace std;
 
@@ -22,97 +23,204 @@ class Flashcard {
 };
 
 class FlashcardBST {
-    private:
-        queue<Flashcard> flashcards;
     protected:
         struct Node {
             tuple<int, queue<Flashcard>> data;
             Node* right;
             Node* left;
-
-            Node(int difficulty, queue<Flashcard> flashcards)
-                : data({difficulty, flashcards}), 
-                  right(NULL), 
-                  left(NULL) 
-            {}
         };
-        Node* root;
 
-        Node* newDiffHelper(Node* currentNode, int difficulty) {    // Makes a new difficulty node
-            if(currentNode == nullptr) {
-                return new Node(difficulty, flashcards);
-            } else if(difficulty < get<0>(currentNode -> data)) {
-                currentNode -> left = newDiffHelper(currentNode -> left, difficulty);
-            } else {
-                currentNode -> right = newDiffHelper(currentNode -> right, difficulty);
-            }
-            return currentNode;
+    Node* root;
+
+    Node* addHelper(tuple<int, queue<Flashcard>> tup, Node* node) {
+        if (node == nullptr) {
+            node = new Node;
+            node -> data = tup;
+            node -> left = node -> right = nullptr;
+        } else if (get<0>(tup) < get<0>(node -> data)) {
+            node -> left = addHelper(tup, node -> left);
+        } else if (get<0>(tup) > get<0>(node -> data)) {
+            node -> right = addHelper(tup, node -> right);
         }
+        return node;
+    }
 
-        Node* findDiffHelper(Node* currentNode, int difficulty) {   // Finds the node correspoding to input difficulty
-            if (currentNode == nullptr) {
-                cout << 0 << endl;
-                return nullptr;
-            }
-            if(difficulty == get<0>(currentNode -> data)) {
-                cout << 7 << endl;          // For debugging purposes
-                return currentNode;
-            } else if(difficulty < get<0>(currentNode -> data)) {
-                cout << 8 << endl;          // For debugging purposes
-                return findDiffHelper(currentNode -> left, difficulty);
-            } else {
-                cout << 9 << endl;          // For debugging purposes
-                return findDiffHelper(currentNode -> right, difficulty);
-            }
-        }
-    public:
-        FlashcardBST():root(nullptr) {}
-
-        void newDiff(int difficulty) {
-            root = newDiffHelper(root, difficulty);
-        }
-
-        Node* findDiff(int difficulty) {
-            Node* node = findDiffHelper(root, difficulty);
+    Node* findMin(Node* node) {
+        if (node == nullptr) {
+            return nullptr;
+        } else if (node -> left == nullptr) {
             return node;
+        } else {
+            return findMin(node -> left);
+        }
+    }
+
+    Node* removeHelper(tuple<int, queue<Flashcard>> tup, Node* node) {
+        Node* temp;
+        if (node == nullptr) {
+            return nullptr;
+        } else if(get<0>(tup) < get<0>(node -> data)) {
+            node -> left = removeHelper(tup, node -> left);
+        } else if(get<0>(tup) > get<0>(node -> data)) {
+            node -> right = removeHelper(tup, node -> right);
+        } else if(node -> left && node -> right) {
+            temp = findMin(node -> right);
+            node -> data = temp -> data;
+            node -> right = removeHelper(node -> data, node ->right);
+        } else {
+            temp = node;
+            if(node -> left == nullptr)
+                node = node -> right;
+            else if(node -> right == nullptr)
+                node = node -> left;
+            delete temp;
+        }
+        return node;
+    }
+
+    void inorder(Node* node) {
+        if (node == NULL) {
+            return;
+        }
+        inorder(node -> left);
+        cout << get<0>(node -> data) << " ";
+        inorder(node -> right);
+    }
+
+    Node* findHelper(tuple<int, queue<Flashcard>> tup, Node* node) {
+        if (node == nullptr) {
+            return nullptr;
+        } else if (get<0>(tup) < get<0>(node -> data)) {
+            return findHelper(tup, node -> left);
+        } else if (get<0>(tup) > get<0>(node -> data)) {
+            return findHelper(tup, node -> right);
+        } else {
+            return node;
+        }
+    }
+
+    public:
+        FlashcardBST() {
+            root = nullptr;
+        }
+
+        void addDifficulty(int difficulty) {
+            queue<Flashcard> flashcard;
+            tuple<int, queue<Flashcard>> tup = {difficulty, flashcard};
+            root = addHelper(tup, root);
+        }
+
+        void removeDifficulty(int difficulty) {
+            queue<Flashcard> flashcard;
+            tuple<int, queue<Flashcard>> tup = {difficulty, flashcard};
+            root = removeHelper(tup, root);
+        }
+
+        Node* findDifficulty(int difficulty) {
+            queue<Flashcard> flashcard;
+            tuple<int, queue<Flashcard>> tup = {difficulty, flashcard};
+            return findHelper(tup, root);
+        }
+
+        void displayBST() {
+            inorder(root);
+            cout << endl;
         }
 };
 
-class FlashcardSystem : public FlashcardBST {
+class FlashcardInterface : public FlashcardBST{
     private:
-        void addFlashcardHelper(int id, int difficulty, string question, char answer, vector<string> choices) {
-            Flashcard flashcard = Flashcard(id, difficulty, question, answer, choices); // Instantiate flashcard
-            Node* node = findDiff(difficulty);  // Instantiate difficulty node
+        unordered_map<int, Flashcard*> flashcardIDs;
+        int nextID = 0;
 
-            // If the node doesn't exist, create it
+        bool addFlashcard(int difficulty, string question, char answer, vector<string> choices) {
+            Flashcard* flashcard = new Flashcard(nextID, difficulty, question, answer, choices);
+            Node* node = findDifficulty(difficulty);
+
             if (node == nullptr) {
-                newDiff(difficulty);
-                node = findDiff(difficulty);    // Re-fetch the code after creating it
+                return true;
             }
-            get<1>(node->data).push(flashcard); // Push flashcard object into queue under difficulty node
+            get<1>(node -> data).push(*flashcard);
+            flashcardIDs[nextID] = flashcard;
+            cout << "Successfully added flashcard #" << nextID << endl;
+            nextID++;
+            return false;
         }
 
-        // void editFlashcardHelper() {}
+        bool editFlashcard(int ID, int new_difficulty, string new_question, char new_answer, vector<string> new_choices) {
+            auto iterator = flashcardIDs.find(ID);
+            if (iterator == flashcardIDs.end()) {
+                return false;
+            }
 
-        // void deleteFlashcardHelper() {}
+            Flashcard* flashcard = iterator -> second;
+            flashcard -> question = new_question;
+            flashcard -> answer = new_answer;
+            flashcard -> choices = new_choices;
 
-        queue<Flashcard> studySystem(int difficulty) {
-            Node* node = findDiff(difficulty);  // Instantiate difficulty node
-            
-            // If the node doesn't exist, create it
-            if (node == nullptr) {
-                cout << "====================================================\n";
-                cout << "[!!] No flashcards for the selected difficulty!\n";
-                return queue<Flashcard>(); // Return an empty queue
+            if (new_difficulty != flashcard -> difficulty) {
+                changeDifficulty(ID, new_difficulty);
+            }
+            return true;
+        }
+
+        bool deleteFlashcard(int ID) {
+            auto iterator = flashcardIDs.find(ID);
+            if (iterator == flashcardIDs.end()) {
+                return false;
+            }
+            Flashcard* flashcard = iterator -> second;
+
+            Node* node = findDifficulty(flashcard -> difficulty);
+            if (node) {
+                queue<Flashcard> temp;
+                while (!get<1>(node -> data).empty()) { // Loop through all flashcards in the queue
+                    Flashcard current = get<1>(node -> data).front(); // Get front of the flashcard queue
+                    get<1>(node -> data).pop(); // Pop first element to get to base case
+                    if (current.id != ID) {
+                        temp.push(current); // Push current flashcard if it's id doesn't match the one we'll delete
+                    }
+                }
+                get<1>(node -> data) = temp;
             }
             
-            // Find flashcard queue based on difficulty
+            // Remove from hash table
+            delete flashcard;            // Free memory
+            flashcardIDs.erase(iterator);
+            return true;
+        }
+
+        bool changeDifficulty(int ID, int new_difficulty) {
+            auto iterator = flashcardIDs.find(ID);
+            if (iterator == flashcardIDs.end()) {
+                return false;
+            }
+            Flashcard* flashcard = iterator -> second;
+            int old_difficulty = flashcard -> difficulty;
+
+            Node* new_node = findDifficulty(new_difficulty);
+            if (new_node == nullptr) {
+                return false; // New difficulty doesn't exist
+            }
+
+            Node* old_node = findDifficulty(old_difficulty);
+            deleteFlashcard(ID);
+            flashcard -> difficulty = new_difficulty;
+            get<1>(new_node -> data).push(*flashcard);
+        }
+
+        queue<Flashcard> flashcardFinder(int difficulty) {
+            Node* node = findDifficulty(difficulty);
+
+            if (node == nullptr) {
+                return queue<Flashcard>(); // Return an empty queue
+            }
             return get<1>(node -> data);
         }
 
-    public:
-    void menuInterface() {
-        bool run = true;
+    public: 
+        void menuInterface() {
+            bool run = true;
         int input;
 
         while(run) {
@@ -127,17 +235,16 @@ class FlashcardSystem : public FlashcardBST {
             cout << endl;
             cout << "Selection: ";
             cin >> input;
-            cout << "====================================================\n";
 
             switch(input) {
                 case 0:
                     addInterface();
                     break;
                 case 1:
-                    // editInterface();
+                    editInterface();
                     break;
                 case 2:
-                    // deleteInterface();
+                    deleteInterface();
                     break;
                 case 3:
                     studyInterface();
@@ -146,159 +253,240 @@ class FlashcardSystem : public FlashcardBST {
                     cout << "Thank you!" << endl;
                     run = false;
                     break;
-            }
-        }
-    }
-
-    void addInterface() {
-        bool run = true;
-        int id, difficulty;
-        string question, choice;
-        char yn, answer, ltr;
-        vector<string> choices;
-
-        id = 0;
-        while(run) {
-            cout << "====================================================\n";
-            cout << "----->[ADD FLASHCARD]<-----\n";
-            cout << endl;
-            cout << "Enter question: ";
-            cin.ignore();
-            getline(cin, question);
-            cout << endl;
-
-            for(int j = 0; j < 4; j++) {
-                ltr = 65 + j;   // A, B, C, D
-                cout << "Enter choice [" << ltr << "]: ";
-                getline(cin, choice);
-                choices.push_back(choice);
-            }
-
-            bool run1 = true;
-            while(run1) {   // Loop for invalid inputs
-                cout << "Enter correct choice: ";
-                cin >> answer;
-                cout << endl;
-
-                switch(answer) {
-                    case 'a': case 'A': case 'B': case 'b': case 'C': case 'c': case 'D': case 'd':
-                        run1 = false;
-                        break;
-                    default:
-                        cout << "[!!] Invalid Input [!!]";
-                        cout << endl;
                 }
             }
+        }
 
-            cout << "Difficulty: ";
-            cin >> difficulty;
-            cout << endl;
+        void addInterface() {
+            bool run = true;
+            int difficulty;
+            string question, choice;
+            char yn, answer, ltr;
+            vector<string> choices;
 
-            addFlashcardHelper(id, difficulty, question, answer, choices);
-            
-            bool run2 = true;
-            while(run2) {   // Loop for invalid inputs
-                cout << "Do you want to add another flashcard [Y/N]? ";
-                cin >> yn;
+            while(run) {
+                cout << "====================================================\n";
+                cout << "----->[ADD FLASHCARD]<-----\n";
+                cout << endl;
+                cout << "Enter question: ";
+                cin.ignore();
+                getline(cin, question);
                 cout << endl;
 
-                switch(yn) {
-                    case 'N': case 'n':
-                        run2 = false;
-                        run = false;
+                for (int j = 0; j < 4; j++) {
+                    ltr = 65 + j;   // A, B, C, D
+                    cout << "Enter choice [" << ltr << "]: ";
+                    getline(cin, choice);
+                    choices.push_back(choice);
+                }
+
+                bool run1 = true;
+                while (run1) {   // Loop for invalid inputs
+                    cout << "Enter correct choice: ";
+                    cin >> answer;
+                    cout << endl;
+
+                    switch(answer) {
+                        case 'a': case 'A': case 'B': case 'b': case 'C': case 'c': case 'D': case 'd':
+                            run1 = false;
+                            break;
+                        default:
+                            cout << "[!!] Invalid Input [!!]";
+                            cout << endl;
+                    }
+                }
+                
+                bool run2 = true;
+                while (run2) {
+                    cout << "Difficulty: ";
+                    cin >> difficulty;
+                    cout << endl;
+
+                    run2 = addFlashcard(difficulty, question, answer, choices);
+                    if (run2) {
+                        cout << "[!!] Difficulty does not exist [!!]\n";
+                    }
+                }
+
+                bool run3 = true;
+                while (run3) {   // Loop for invalid inputs
+                    cout << "Do you want to add another flashcard [Y/N]? ";
+                    cin >> yn;
+                    cout << endl;
+
+                    switch(yn) {
+                        case 'N': case 'n':
+                            run3 = false;
+                            run = false;
+                            break;
+                        case 'Y': case 'y':
+                            run3 = false;
+                            break;
+                        default:
+                            cout << "[!!] Invalid Input [!!]";
+                            cout << endl;
+                            break;
+                    }
+                }
+
+                cout << "====================================================\n";
+                difficulty = 0; // Reset difficulty for the next flashcard
+                question.clear(); // Clear the question string for the next flashcard
+                choices.clear(); // Clear the choices vector for the next flashcard
+            }
+        }
+
+        void editInterface() {
+            bool run = true;
+            int ID, input;
+            string choice;
+            char ltr;
+
+            while(run) {
+                cout << "====================================================\n";
+                cout << "----->[EDIT FLASHCARD]<-----\n";
+                cout << endl;
+                cout << "Enter the ID of the flashcard you wish to edit: ";
+                cin >> ID;
+                
+                auto iterator = flashcardIDs.find(ID);
+                if (iterator == flashcardIDs.end()) {
+                    cout << "[!!] Flashcard not found [!!]\n";
+                    continue;
+                }
+                Flashcard* flashcard = iterator -> second;
+                string new_question = flashcard -> question;        // Set up with original/default values
+                vector<string> new_choices = flashcard -> choices;
+                char new_answer = flashcard -> answer;
+                int new_difficulty = flashcard -> difficulty;
+
+                flashcardInterface(flashcard -> question, flashcard -> answer, flashcard -> choices, 0);
+                cout << "Difficulty: " << flashcard -> difficulty << endl;
+
+                bool run1 = true;
+                while (run1) {
+                    cout << "====================================================\n";
+                    cout << "[0] Edit Question\n";
+                    cout << "[1] Edit Choices\n";
+                    cout << "[2] Edit Answer\n";
+                    cout << "[3] Edit Difficulty\n";
+                    cout << "[4] Cancel\n";
+                    cout << "Selection: ";
+                    cin >> input;
+
+                    switch(input) {
+                        case 0:
+                            cout << "Enter new question: ";
+                            cin.ignore();
+                            getline(cin, new_question);
+                            run1 = false;
+                            break;
+                        case 1:
+                            new_choices.clear();
+                            for(int j = 0; j < 4; j++) {
+                                ltr = 65 + j;   // A, B, C, D
+                                cout << "Enter new choice [" << ltr << "]: ";
+                                cin.ignore();
+                                getline(cin, choice);
+                                new_choices.push_back(choice);
+                            }
+                            run1 = false;
+                            break;
+                        case 2:
+                            cout << "Enter new answer: ";
+                            cin >> new_answer;
+                            run1 = false;
+                            break;
+                        case 3:
+                            cout << "Enter new difficulty: ";
+                            cin >> new_difficulty;
+                            run1 = false;
+                            break;
+                        case 4:
+                            return;
+                        default:
+                            cout << "[!!] Invalid Input [!!]";
+                            cout << endl;
+                            break;
+                    }
+                }
+
+                run = !editFlashcard(ID, new_difficulty, new_question, new_answer, new_choices);
+            }
+
+            cout << "Successfully edited the flashcard\n";
+        }
+
+        void deleteInterface() {}
+
+        void studyInterface() {
+            int difficulty;
+            queue<Flashcard> flashcards;
+            bool run = true;
+
+            while (true) {
+                cout << "====================================================\n";
+                cout << "----->[STUDY MODE]<-----\n";
+                cout << endl;
+
+                bool run1 = true;
+                while (run1) {
+                    cout << "Select a difficulty: ";
+                    cin >> difficulty;
+
+                    flashcards = flashcardFinder(difficulty);
+                    if (flashcards.empty() == false) {
                         break;
-                    case 'Y': case 'y':
-                        run2 = false;
-                        break;
-                    default:
-                        cout << "[!!] Invalid Input [!!]";
-                        cout << endl;
-                        break;
+                    }
+                    cout << "[!!] Difficulty does not exist OR No flashcards in selected difficulty [!!]\n";
+
+                }
+
+                int correct = 0;
+                int size = flashcards.size();
+
+                for(int i = 0; i < size; i++) {
+                    string question = flashcards.front().question;
+                    char flash_answer = flashcards.front().answer;
+                    vector<string> choices = flashcards.front().choices;
+                    int ctr = i + 1;
+                    char user_answer;
+        
+                    flashcardInterface(question, flash_answer, choices, ctr);                
+                    cout << "Enter your answer: ";
+                    cin >> user_answer;
+                    cin.ignore();
+                    cout << endl << endl;
+                    if (user_answer == flash_answer || user_answer == flash_answer + 32 || user_answer == flash_answer - 32) {
+                        correct++; 
+                        cout << "Your answer is correct!" << endl;
+                    } else {
+                        cout << "Incorrect! The correct answer is: " << flashcards.front().answer << endl;
+                    }
+                    choices.clear();
+                    flashcards.pop();
+                    cout << endl;
                 }
             }
+        }
 
+        void flashcardInterface(string question, char answer, vector<string> choices, int ctr) {
             cout << "====================================================\n";
-
-            id++;
-            difficulty = 0; // Reset difficulty for the next flashcard
-            question.clear(); // Clear the question string for the next flashcard
-            choices.clear(); // Clear the choices vector for the next flashcard
+            cout << "Question #" << ctr << ": " << question << endl;
+            cout << "Choices: " << endl;
+            cout << "[A] " << choices[0] << endl;
+            cout << "[B] " << choices[1] << endl;
+            cout << "[C] " << choices[2] << endl;
+            cout << "[D] " << choices[3] << endl;
         }
-    }
-
-    // bool deleteInterface() {
-    //     // delete flashcard
-    //     cout << "====================================================\n";
-    //     cout << "[DELETE FLASHCARD]\n";
-    //     cout << "Choose a flashcard to delete: ";
-    //     int size = flashcards.size();
-    //     for(int i = 1; i < size; i++) {
-    //         cout << "[" << i << "]" << " " << flashcards.question << endl;
-    //     }
-    //     return true;
-    // }
-
-    void studyInterface() {
-        int difficulty;
-
-        cout << "====================================================\n";
-        cout << "----->[STUDY MODE]<-----\n";
-        cout << endl;
-        cout << "Select a difficulty: ";
-        cin >> difficulty;
-
-        queue<Flashcard> flashcards = studySystem(difficulty);
-        if (flashcards.empty()) {
-            return; // Exit if no flashcards are found
-        }
-        
-        int correct = 0;
-        int size = flashcards.size();
-        
-        for(int i = 0; i < size; i++) {
-            string question = flashcards.front().question;
-            char flash_answer = flashcards.front().answer;
-            vector<string> choices = flashcards.front().choices;
-            int ctr = i + 1;
-            char user_answer;
-
-            flashcardInterface(question, flash_answer, choices, ctr);                
-            cout << "Enter your answer: ";
-            cin >> user_answer;
-            cin.ignore();
-            cout << endl << endl;
-            if (user_answer == flash_answer || user_answer == flash_answer + 32 || user_answer == flash_answer - 32) {
-                correct++; 
-                cout << "Your answer is correct!" << endl;
-            } else {
-                cout << "Incorrect! The correct answer is: " << flashcards.front().answer << endl;
-            }
-            choices.clear();
-            flashcards.pop();
-            cout << endl;
-        }
-        cout << endl << "==================================================== \n";
-        cout << "You have answered " << correct << " out of " << size << " questions correctly. \n";
-        cout << endl;
-    }
-
-    void flashcardInterface(string question, char answer, vector<string> choices, int ctr) {
-        cout << "====================================================\n";
-        cout << "Question #" << ctr << ": " << question << endl;
-        cout << "Choices: " << endl;
-        cout << "[A] " << choices[0] << endl;
-        cout << "[B] " << choices[1] << endl;
-        cout << "[C] " << choices[2] << endl;
-        cout << "[D] " << choices[3] << endl;
-    }
 };
-
+    
 int main() {
-    FlashcardSystem flash;
-    FlashcardBST ez;
-    ez.newDiff(1);
-    ez.newDiff(2);
-    ez.newDiff(3);
-    flash.menuInterface();
+    FlashcardInterface flashcard;
+    flashcard.addDifficulty(2);
+    flashcard.addDifficulty(3);
+    flashcard.addDifficulty(1);
+    flashcard.displayBST();
+    flashcard.menuInterface();
     return 0;
 }
