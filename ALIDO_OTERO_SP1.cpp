@@ -97,9 +97,17 @@ class FlashcardSystem : public FlashcardBST {
         // void deleteFlashcardHelper() {}
 
         queue<Flashcard> studySystem(int difficulty) {
-            queue<Flashcard> flashcards = get<1>(findDiff(difficulty) -> data); // Find flashcard queue based on difficulty
-            cout << "study check\n";
-            return flashcards;
+            Node* node = findDiff(difficulty);  // Instantiate difficulty node
+            
+            // If the node doesn't exist, create it
+            if (node == nullptr) {
+                cout << "====================================================\n";
+                cout << "[!!] No flashcards for the selected difficulty!\n";
+                return queue<Flashcard>(); // Return an empty queue
+            }
+            
+            // Find flashcard queue based on difficulty
+            return get<1>(node -> data);
         }
 
     public:
@@ -232,7 +240,6 @@ class FlashcardSystem : public FlashcardBST {
 
     void studyInterface() {
         int difficulty;
-        int correct = 0;
 
         cout << "====================================================\n";
         cout << "----->[STUDY MODE]<-----\n";
@@ -241,6 +248,11 @@ class FlashcardSystem : public FlashcardBST {
         cin >> difficulty;
 
         queue<Flashcard> flashcards = studySystem(difficulty);
+        if (flashcards.empty()) {
+            return; // Exit if no flashcards are found
+        }
+        
+        int correct = 0;
         int size = flashcards.size();
         
         for(int i = 0; i < size; i++) {
