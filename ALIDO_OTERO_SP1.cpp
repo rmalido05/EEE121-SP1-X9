@@ -158,6 +158,22 @@ class FlashcardInterface : public FlashcardBST{
             flashcard -> answer = new_answer;
             flashcard -> choices = new_choices;
 
+            Node* node = findDifficulty(flashcard->difficulty);
+            if (node) {
+                queue<Flashcard> temp;
+                while (!get<1>(node->data).empty()) {
+                    Flashcard current = get<1>(node->data).front();
+                    get<1>(node->data).pop();
+                    if (current.id == ID) {
+                        current.question = new_question;
+                        current.answer = new_answer;
+                        current.choices = new_choices;
+                    }
+                    temp.push(current);
+                }
+                get<1>(node->data) = temp;
+            }
+
             if (new_difficulty != flashcard -> difficulty) {
                 changeDifficulty(ID, new_difficulty);
             }
@@ -204,9 +220,23 @@ class FlashcardInterface : public FlashcardBST{
             }
 
             Node* old_node = findDifficulty(old_difficulty);
-            deleteFlashcard(ID);
+            if (old_node) {
+                queue<Flashcard> temp;
+                while (!get<1>(old_node -> data).empty()) {
+                    Flashcard current = get<1>(old_node -> data).front();
+                    get<1>(old_node -> data).pop();
+                    if (current.id != ID) {
+                        temp.push(current);
+                    }
+                }
+                get<1>(old_node -> data) = temp;
+            }
+        
+            // Update difficulty and add to new queue
             flashcard -> difficulty = new_difficulty;
             get<1>(new_node -> data).push(*flashcard);
+            
+            return true;
         }
 
         queue<Flashcard> flashcardFinder(int difficulty) {
@@ -361,6 +391,7 @@ class FlashcardInterface : public FlashcardBST{
                 int new_difficulty = flashcard -> difficulty;
 
                 flashcardInterface(flashcard -> question, flashcard -> answer, flashcard -> choices, 0);
+                cout << "Answer: " << flashcard -> answer << endl;
                 cout << "Difficulty: " << flashcard -> difficulty << endl;
 
                 bool run1 = true;
@@ -383,10 +414,10 @@ class FlashcardInterface : public FlashcardBST{
                             break;
                         case 1:
                             new_choices.clear();
+                            cin.ignore();
                             for(int j = 0; j < 4; j++) {
                                 ltr = 65 + j;   // A, B, C, D
                                 cout << "Enter new choice [" << ltr << "]: ";
-                                cin.ignore();
                                 getline(cin, choice);
                                 new_choices.push_back(choice);
                             }
@@ -400,7 +431,11 @@ class FlashcardInterface : public FlashcardBST{
                         case 3:
                             cout << "Enter new difficulty: ";
                             cin >> new_difficulty;
-                            run1 = false;
+                            if (findDifficulty(new_difficulty)) {
+                                run1 = false;
+                            } else {
+                                cout << "[!!] Difficulty doesn't exist [!!]\n";
+                            }
                             break;
                         case 4:
                             return;
@@ -413,18 +448,55 @@ class FlashcardInterface : public FlashcardBST{
 
                 run = !editFlashcard(ID, new_difficulty, new_question, new_answer, new_choices);
             }
-
             cout << "Successfully edited the flashcard\n";
         }
 
-        void deleteInterface() {}
+        void deleteInterface() {
+            bool run = true;
+            int ID;
+            char yn;
+
+            while (run) {
+                cout << "====================================================\n";
+                cout << "----->[DELETE FLASHCARD]<-----\n";
+                cout << endl;
+                cout << "Enter the ID of the flashcard you wish to delete: ";
+                cin >> ID;
+
+                bool run1 = true;
+                while (run1) {
+                    cout << "Are you sure you want to delete Flashcard #" << ID << "? [Y/N]\n";
+                    cin >> yn;
+                    cout << endl;
+
+                    switch(yn) {
+                        case 'N': case 'n':
+                            run1 = false;
+                            continue;
+                            break;
+                        case 'Y': case 'y':
+                            run1 = false;
+                            break;
+                        default:
+                            cout << "[!!] Invalid Input [!!]";
+                            cout << endl;
+                            break;
+                    }
+                }
+
+                if (deleteFlashcard(ID)) {
+                    cout << "Flashcard deleted successfully.\n";
+                    run = false;
+                }
+            }
+        }
 
         void studyInterface() {
             int difficulty;
             queue<Flashcard> flashcards;
             bool run = true;
 
-            while (true) {
+            while (run) {
                 cout << "====================================================\n";
                 cout << "----->[STUDY MODE]<-----\n";
                 cout << endl;
@@ -467,7 +539,30 @@ class FlashcardInterface : public FlashcardBST{
                     flashcards.pop();
                     cout << endl;
                 }
+
+                int fin;
+                cout << "You've finished all the flashcards for this difficulty.\n\n";
+                cout << "[0] Review Answers\n";
+                cout << "[1] Exit\n";
+                cout << "Selection: ";
+                cin >> fin;
+
+                switch (fin) {
+                    case 0:
+                        // reviewInterface();
+                        run = false;
+                        break;
+                    case 1:
+                        run = false;
+                        break;
+                }
             }
+        }
+
+        void reviewInterface() {
+            cout << "====================================================\n";
+            cout << "----->[REVIEW MODE]<-----\n";
+            cout << endl;
         }
 
         void flashcardInterface(string question, char answer, vector<string> choices, int ctr) {
