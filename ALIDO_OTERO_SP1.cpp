@@ -494,9 +494,13 @@ class FlashcardInterface : public FlashcardBST{
         void studyInterface() {
             int difficulty;
             queue<Flashcard> flashcards;
+            queue<Flashcard> flashcards_copy;
+            queue<char> user_answers;
             bool run = true;
 
             while (run) {
+                user_answers = queue<char>();
+
                 cout << "====================================================\n";
                 cout << "----->[STUDY MODE]<-----\n";
                 cout << endl;
@@ -514,27 +518,22 @@ class FlashcardInterface : public FlashcardBST{
 
                 }
 
-                int correct = 0;
                 int size = flashcards.size();
+                flashcards_copy = flashcards;
 
                 for(int i = 0; i < size; i++) {
                     string question = flashcards.front().question;
                     char flash_answer = flashcards.front().answer;
                     vector<string> choices = flashcards.front().choices;
-                    int ctr = i + 1;
+                    int question_number = i + 1;
                     char user_answer;
         
-                    flashcardInterface(question, flash_answer, choices, ctr);                
+                    flashcardInterface(question, flash_answer, choices, question_number);                
                     cout << "Enter your answer: ";
                     cin >> user_answer;
                     cin.ignore();
-                    cout << endl << endl;
-                    if (user_answer == flash_answer || user_answer == flash_answer + 32 || user_answer == flash_answer - 32) {
-                        correct++; 
-                        cout << "Your answer is correct!" << endl;
-                    } else {
-                        cout << "Incorrect! The correct answer is: " << flashcards.front().answer << endl;
-                    }
+
+                    user_answers.push(user_answer);
                     choices.clear();
                     flashcards.pop();
                     cout << endl;
@@ -542,32 +541,69 @@ class FlashcardInterface : public FlashcardBST{
 
                 int fin;
                 cout << "You've finished all the flashcards for this difficulty.\n\n";
-                cout << "[0] Review Answers\n";
-                cout << "[1] Exit\n";
-                cout << "Selection: ";
-                cin >> fin;
 
-                switch (fin) {
-                    case 0:
-                        // reviewInterface();
-                        run = false;
-                        break;
-                    case 1:
-                        run = false;
-                        break;
+                bool run2 = true;
+                while (run2) {
+                    cout << "[0] Review Answers\n";
+                    cout << "[1] Exit\n";
+                    cout << "Selection: ";
+                    cin >> fin;
+
+                    switch (fin) {
+                        case 0:
+                            reviewInterface(flashcards_copy, user_answers);
+                            run = false;
+                            run2 = false;
+                            break;
+                        case 1:
+                            run = false;
+                            run2 = false;
+                            break;
+                        default:
+                            cout << "[!!] Invalid Input [!!]\n";
+                            break;
+                    }
                 }
             }
         }
 
-        void reviewInterface() {
+        void reviewInterface(queue<Flashcard> flashcards, queue<char> user_answers) {
             cout << "====================================================\n";
             cout << "----->[REVIEW MODE]<-----\n";
             cout << endl;
+
+            int correct_answers = 0;
+            int size = flashcards.size();
+            char ch;
+            for (int i = 0; i < size; i++) {
+                string question = flashcards.front().question;
+                char flash_answer = flashcards.front().answer;
+                vector<string> choices = flashcards.front().choices;
+                char user_answer = user_answers.front();
+                int question_number = i + 1;
+
+                flashcardInterface(question, flash_answer, choices, question_number);
+                cout << "Your answer was: " << user_answer << endl;
+                if (user_answer == flash_answer || user_answer == flash_answer + 32 || user_answer == flash_answer - 32) {
+                    cout << "Your answer is correct!\n";
+                    correct_answers++;
+                } else {
+                    cout << "The correct answer is: " << flash_answer << endl;
+                }
+                
+                choices.clear();
+                flashcards.pop();
+                user_answers.pop();
+            }
+
+            cout << "Your score is " << correct_answers << "/" << size << "!\n";
+            cout << "Enter any character to exit: ";
+            cin >> ch;
         }
 
-        void flashcardInterface(string question, char answer, vector<string> choices, int ctr) {
+        void flashcardInterface(string question, char answer, vector<string> choices, int question_number) {
             cout << "====================================================\n";
-            cout << "Question #" << ctr << ": " << question << endl;
+            cout << "Question #" << question_number << ": " << question << endl;
             cout << "Choices: " << endl;
             cout << "[A] " << choices[0] << endl;
             cout << "[B] " << choices[1] << endl;
