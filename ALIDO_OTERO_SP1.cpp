@@ -1,11 +1,14 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <string>
 #include <tuple>
 #include <queue>
 #include <unordered_map>
-
+#include <direct.h>
 using namespace std;
+
+const string main_path = "C:\\Users\\TATA\\Desktop\\Acads\\EEE 121\\"; // global variable
 
 class Flashcard {
     public:
@@ -37,6 +40,7 @@ class FlashcardBST {
             node = new Node;
             node -> data = tup;
             node -> left = node -> right = nullptr;
+            _mkdir((main_path + to_string(get<0>(tup))).c_str()); // makes a directory/folder named as the difficulty number
         } else if (get<0>(tup) < get<0>(node -> data)) {
             node -> left = addHelper(tup, node -> left);
         } else if (get<0>(tup) > get<0>(node -> data)) {
@@ -78,15 +82,6 @@ class FlashcardBST {
         return node;
     }
 
-    void inorder(Node* node) {
-        if (node == NULL) {
-            return;
-        }
-        inorder(node -> left);
-        cout << get<0>(node -> data) << " ";
-        inorder(node -> right);
-    }
-
     Node* findHelper(tuple<int, queue<Flashcard>> tup, Node* node) {
         if (node == nullptr) {
             return nullptr;
@@ -105,26 +100,18 @@ class FlashcardBST {
         }
 
         void addDifficulty(int difficulty) {
+            string diff_path = main_path + to_string(difficulty);
+            mkdir(diff_path.c_str());
+
             queue<Flashcard> flashcard;
             tuple<int, queue<Flashcard>> tup = {difficulty, flashcard};
             root = addHelper(tup, root);
-        }
-
-        void removeDifficulty(int difficulty) {
-            queue<Flashcard> flashcard;
-            tuple<int, queue<Flashcard>> tup = {difficulty, flashcard};
-            root = removeHelper(tup, root);
         }
 
         Node* findDifficulty(int difficulty) {
             queue<Flashcard> flashcard;
             tuple<int, queue<Flashcard>> tup = {difficulty, flashcard};
             return findHelper(tup, root);
-        }
-
-        void displayBST() {
-            inorder(root);
-            cout << endl;
         }
 };
 
@@ -142,6 +129,25 @@ class FlashcardInterface : public FlashcardBST{
             }
             get<1>(node -> data).push(*flashcard);
             flashcardIDs[nextID] = flashcard;
+
+            // Creates a new flashcard file
+            string new_file_path = main_path + to_string(difficulty) + "\\" + "flashcard_" + to_string(nextID) + ".txt";
+            ofstream new_file(new_file_path);
+            if (new_file.is_open()) {
+                new_file << "ID: " << nextID << endl;
+                new_file << "Difficulty: " << difficulty << endl;
+                new_file << "Question: " << question << endl;
+                new_file << "Choices: " << endl;
+                for (int i = 0; i < 4; i++) {
+                    char ltr = 'A' + i;
+                    new_file << "[" << ltr << "] " << choices[i] << endl;
+                }
+                new_file << "Answer: " << answer << endl;
+                new_file.close();
+            } else {
+                cerr << "[!!] Error creating file for card #" << nextID << " [!!]" << endl;
+            }
+
             cout << "Successfully added flashcard #" << nextID << endl;
             nextID++;
             return false;
@@ -175,8 +181,30 @@ class FlashcardInterface : public FlashcardBST{
             }
 
             if (new_difficulty != flashcard -> difficulty) {
+                string file_path = main_path + to_string(flashcard -> difficulty) + "\\" + "flashcard_" + to_string(ID) + ".txt";
+                remove(file_path.c_str());
                 changeDifficulty(ID, new_difficulty);
             }
+
+            // Overwrite flashcard file
+            string file_path = main_path + to_string(new_difficulty) + "\\" + "flashcard_" + to_string(ID) + ".txt";
+            ofstream file(file_path, ios::trunc);
+            if (file.is_open()) {
+                file << "ID: " << ID << endl;
+                file << "Difficulty: " << new_difficulty << endl;
+                file << "Question: " << new_question << endl;
+                file << "Choices: " << endl;
+                for (int i = 0; i < 4; i++) {
+                    char ltr = 'A' + i;
+                    file << "[" << ltr << "] " << new_choices[i] << endl;
+                }
+                file << "Answer: " << new_answer << endl;
+                file.close();
+            } else {
+                cerr << "[!!] Error editing file for flashcard #" << ID << " [!!]" << endl;
+            }
+
+            cout << "Sucessfully edited flashcard #" << ID << endl;
             return true;
         }
 
@@ -199,7 +227,13 @@ class FlashcardInterface : public FlashcardBST{
                 }
                 get<1>(node -> data) = temp;
             }
-            
+
+            string file_path = main_path + to_string(flashcard -> difficulty) + "\\" + "flashcard_" + to_string(ID) + ".txt";
+            if (remove(file_path.c_str()) != 0) {
+                cerr << "[!!] Could not delete flashcard file #" << ID << "[!!]" << endl;
+            }
+
+            cout << "Successfully deleted flashcard #" << ID << endl;
             // Remove from hash table
             delete flashcard;            // Free memory
             flashcardIDs.erase(iterator);
@@ -248,7 +282,71 @@ class FlashcardInterface : public FlashcardBST{
             return get<1>(node -> data);
         }
 
+        Flashcard readFlashcardFile(ifstream& file, int id, int difficulty) {
+            string line, question;
+            vector<string> choices(4);
+            char answer;
+            
+            while (getline(file, line)) {
+                if (line.find("Question: ") == 0) { // skips 10 chars
+                    question = line.substr(10);
+                } 
+                else if (line.find("[A] ") == 0) choices[0] = line.substr(4); // skips 4 chars
+                else if (line.find("[B] ") == 0) choices[1] = line.substr(4); // skips 4 chars
+                else if (line.find("[C] ") == 0) choices[2] = line.substr(4); // skips 4 chars
+                else if (line.find("[D] ") == 0) choices[3] = line.substr(4); // skips 4 chars
+                else if (line.find("Answer: ") == 0) answer = line.substr(8)[0]; // skips 8 chars, [0] only takes the first char
+            }
+            
+            return Flashcard(id, difficulty, question, answer, choices);
+        }
+
     public: 
+        void initializer() {
+            // Check all directories for difficulties (nodes)
+            for (int difficulty = 1; difficulty <= 3; difficulty++) {
+                string diff_path = main_path + to_string(difficulty);
+                mkdir(diff_path.c_str());
+                addDifficulty(difficulty);
+            
+            // Check directory contents and push onto flashcard queue
+            string flash_path = diff_path + "\\flashcard_*.txt"; // '*' is a wildcard character that can represent any character possible
+            _finddata_t file_info; // _finddata_t structure used for file & directory searching / file_info stores the file
+            intptr_t handle = _findfirst(flash_path.c_str(), &file_info); // handle - reference used in programming to access system-managed resources
+            
+            if (handle != -1) { // handle = -1 means no files match the description (flashcard_*.txt)
+                do {
+                    // Extract ID from filename (flashcard_123.txt -> 123)
+                    string filename = file_info.name; // stores the specific filename
+                    size_t underscore = filename.find('_'); // stores index of first occurrence of '_' in the filename
+                    size_t dot = filename.find('.'); // stores index of first occurrence of '.' in the filename
+                    int id = stoi(filename.substr(underscore + 1, dot - underscore - 1)); // stores the ID from the filename
+                    // stoi - string to int | substr(<startpoint>, <size of str expected>) - gets a substr from a string
+                    
+                    // Read flashcard file
+                    string filepath = diff_path + "\\" + filename;
+                    ifstream file(filepath);
+                    if (file.is_open()) {
+                        Flashcard flashcard = readFlashcardFile(file, id, difficulty);
+
+                        Node* node = findDifficulty(flashcard.difficulty);
+                        if (node) {
+                            get<1>(node->data).push(flashcard); // Add flashcard to BST
+                        }
+                        
+                        flashcardIDs[flashcard.id] = new Flashcard(flashcard); // Add flashcard to hash table
+                        if (flashcard.id >= nextID) {
+                            nextID = flashcard.id + 1; // Update next available ID
+                        }
+                    }
+                } while (_findnext(handle, &file_info) == 0);
+
+                _findclose(handle);
+            }
+            }
+            cout << "Initialized progress successfully!" << endl;
+        }
+
         void menuInterface() {
             bool run = true;
         int input;
@@ -390,7 +488,7 @@ class FlashcardInterface : public FlashcardBST{
                 char new_answer = flashcard -> answer;
                 int new_difficulty = flashcard -> difficulty;
 
-                flashcardInterface(flashcard -> question, flashcard -> answer, flashcard -> choices, 0);
+                flashcardInterface(flashcard -> question, flashcard -> choices, 0);
                 cout << "Answer: " << flashcard -> answer << endl;
                 cout << "Difficulty: " << flashcard -> difficulty << endl;
 
@@ -448,7 +546,6 @@ class FlashcardInterface : public FlashcardBST{
 
                 run = !editFlashcard(ID, new_difficulty, new_question, new_answer, new_choices);
             }
-            cout << "Successfully edited the flashcard\n";
         }
 
         void deleteInterface() {
@@ -465,7 +562,7 @@ class FlashcardInterface : public FlashcardBST{
 
                 bool run1 = true;
                 while (run1) {
-                    cout << "Are you sure you want to delete Flashcard #" << ID << "? [Y/N]\n";
+                    cout << "Are you sure you want to delete Flashcard #" << ID << "? [Y/N] ";
                     cin >> yn;
                     cout << endl;
 
@@ -485,7 +582,6 @@ class FlashcardInterface : public FlashcardBST{
                 }
 
                 if (deleteFlashcard(ID)) {
-                    cout << "Flashcard deleted successfully.\n";
                     run = false;
                 }
             }
@@ -528,7 +624,7 @@ class FlashcardInterface : public FlashcardBST{
                     int question_number = i + 1;
                     char user_answer;
         
-                    flashcardInterface(question, flash_answer, choices, question_number);                
+                    flashcardInterface(question, choices, question_number);                
                     cout << "Enter your answer: ";
                     cin >> user_answer;
                     cin.ignore();
@@ -582,7 +678,7 @@ class FlashcardInterface : public FlashcardBST{
                 char user_answer = user_answers.front();
                 int question_number = i + 1;
 
-                flashcardInterface(question, flash_answer, choices, question_number);
+                flashcardInterface(question, choices, question_number);
                 cout << "Your answer was: " << user_answer << endl;
                 if (user_answer == flash_answer || user_answer == flash_answer + 32 || user_answer == flash_answer - 32) {
                     cout << "Your answer is correct!\n";
@@ -601,7 +697,7 @@ class FlashcardInterface : public FlashcardBST{
             cin >> ch;
         }
 
-        void flashcardInterface(string question, char answer, vector<string> choices, int question_number) {
+        void flashcardInterface(string question, vector<string> choices, int question_number) {
             cout << "====================================================\n";
             cout << "Question #" << question_number << ": " << question << endl;
             cout << "Choices: " << endl;
@@ -614,10 +710,7 @@ class FlashcardInterface : public FlashcardBST{
     
 int main() {
     FlashcardInterface flashcard;
-    flashcard.addDifficulty(2);
-    flashcard.addDifficulty(3);
-    flashcard.addDifficulty(1);
-    flashcard.displayBST();
+    flashcard.initializer();
     flashcard.menuInterface();
     return 0;
 }
