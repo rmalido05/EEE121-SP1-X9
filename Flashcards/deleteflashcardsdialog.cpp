@@ -6,6 +6,7 @@ deleteFlashcardsDialog::deleteFlashcardsDialog(QWidget *parent)
     , ui(new Ui::deleteFlashcardsDialog)
 {
     ui->setupUi(this);
+
 }
 
 deleteFlashcardsDialog::~deleteFlashcardsDialog()

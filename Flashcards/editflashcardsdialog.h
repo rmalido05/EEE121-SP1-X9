@@ -19,6 +19,9 @@ public:
                             char answer,
                             int difficulty);
 
+public slots:
+    void addFlashcardToDropdown(int newID);
+
 private:
     Ui::editFlashcardsDialog *ui;
 

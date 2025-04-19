@@ -39,16 +39,22 @@ template <> constexpr inline auto addFlashcardsDialog::qt_create_metaobjectdata<
     namespace QMC = QtMocConstants;
     QtMocHelpers::StringRefStorage qt_stringData {
         "addFlashcardsDialog",
-        "on_addButton_clicked",
+        "flashcardAdded",
         "",
+        "newID",
+        "on_addButton_clicked",
         "on_cancelButton_clicked"
     };
 
     QtMocHelpers::UintData qt_methods {
+        // Signal 'flashcardAdded'
+        QtMocHelpers::SignalData<void(int)>(1, 2, QMC::AccessPublic, QMetaType::Void, {{
+            { QMetaType::Int, 3 },
+        }}),
         // Slot 'on_addButton_clicked'
-        QtMocHelpers::SlotData<void()>(1, 2, QMC::AccessPrivate, QMetaType::Void),
+        QtMocHelpers::SlotData<void()>(4, 2, QMC::AccessPrivate, QMetaType::Void),
         // Slot 'on_cancelButton_clicked'
-        QtMocHelpers::SlotData<void()>(3, 2, QMC::AccessPrivate, QMetaType::Void),
+        QtMocHelpers::SlotData<void()>(5, 2, QMC::AccessPrivate, QMetaType::Void),
     };
     QtMocHelpers::UintData qt_properties {
     };
@@ -72,12 +78,16 @@ void addFlashcardsDialog::qt_static_metacall(QObject *_o, QMetaObject::Call _c, 
     auto *_t = static_cast<addFlashcardsDialog *>(_o);
     if (_c == QMetaObject::InvokeMetaMethod) {
         switch (_id) {
-        case 0: _t->on_addButton_clicked(); break;
-        case 1: _t->on_cancelButton_clicked(); break;
+        case 0: _t->flashcardAdded((*reinterpret_cast< std::add_pointer_t<int>>(_a[1]))); break;
+        case 1: _t->on_addButton_clicked(); break;
+        case 2: _t->on_cancelButton_clicked(); break;
         default: ;
         }
     }
-    (void)_a;
+    if (_c == QMetaObject::IndexOfMethod) {
+        if (QtMocHelpers::indexOfMethod<void (addFlashcardsDialog::*)(int )>(_a, &addFlashcardsDialog::flashcardAdded, 0))
+            return;
+    }
 }
 
 const QMetaObject *addFlashcardsDialog::metaObject() const
@@ -99,15 +109,21 @@ int addFlashcardsDialog::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 2)
+        if (_id < 3)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 2;
+        _id -= 3;
     }
     if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 2)
+        if (_id < 3)
             *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
-        _id -= 2;
+        _id -= 3;
     }
     return _id;
+}
+
+// SIGNAL 0
+void addFlashcardsDialog::flashcardAdded(int _t1)
+{
+    QMetaObject::activate<void>(this, &staticMetaObject, 0, nullptr, _t1);
 }
 QT_WARNING_POP

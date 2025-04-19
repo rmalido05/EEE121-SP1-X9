@@ -14,6 +14,8 @@ class addFlashcardsDialog : public QDialog
 public:
     explicit addFlashcardsDialog(QWidget *parent = nullptr);
     ~addFlashcardsDialog();
+signals:
+    void flashcardAdded(int newID);
 
 private slots:
     void on_addButton_clicked();

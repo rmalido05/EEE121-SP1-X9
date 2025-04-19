@@ -11,6 +11,13 @@ addFlashcardsDialog::addFlashcardsDialog(QWidget *parent)
     ui->setupUi(this);
 }
 
+int add(QWidget* parent, int diff, QString question, QString answer, vector<QString> choices) {
+    FlashcardInterface flashcard;
+    flashcard.initializer();
+    int id = flashcard.addInterface(parent, diff, question, answer, choices);
+    return id;
+}
+
 addFlashcardsDialog::~addFlashcardsDialog()
 {
     delete ui;
@@ -30,12 +37,20 @@ void addFlashcardsDialog::on_addButton_clicked()
     choices.push_back(choice_b);
     choices.push_back(choice_c);
     choices.push_back(choice_d);
-    if (question.isEmpty() && choice_a.isEmpty() && choice_b.isEmpty() && choice_c.isEmpty() && choice_d.isEmpty() && answer == "<none>" && user_diff == "<none>") {
+    if ((question.isEmpty()) &&
+        (choice_a.isEmpty()) &&
+        (choice_b.isEmpty()) &&
+        (choice_c.isEmpty()) &&
+        (choice_d.isEmpty()) &&
+        (answer == "<none>") &&
+        (user_diff == "<none>")) {
         QMessageBox::information(this, "Error!", "Invalid Input.");
     }
     else {
-        FlashcardInterface flashcard;
-        flashcard.addInterface(this, user_diff.toInt(), question, answer, choices);
+        int newID = add(this, user_diff.toInt(), question, answer, choices);
+        if (newID != -1) {
+            emit flashcardAdded(newID);
+        }
     }
 
     ui -> input_question -> clear();

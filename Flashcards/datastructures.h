@@ -17,7 +17,7 @@
 
 using namespace std;
 
-const string main_path = QDir::currentPath().toStdString() + "\\"; // global variable
+const string main_path = QDir::currentPath().toStdString() + "/"; // global variable
 
 class Flashcard {
 public:
@@ -135,20 +135,21 @@ private:
 
     void incrementID(){
         nextID++;
+        return;
     }
 
-    bool addFlashcard(int difficulty, QString question, char answer, vector<QString> choices) {
+    int addFlashcard(int difficulty, QString question, char answer, vector<QString> choices) {
         Flashcard* flashcard = new Flashcard(nextID, difficulty, question, answer, choices);
         Node* node = findDifficulty(difficulty);
 
         if (node == nullptr) {
-            return true;
+            return -1;
         }
         else {
             get<1>(node -> data).push(*flashcard);
             flashcardIDs[nextID] = flashcard;
             // Creates a new flashcard file
-            string new_file_path = main_path + to_string(difficulty) + "\\" + "flashcard_" + to_string(nextID) + ".txt/";
+            string new_file_path = main_path + to_string(difficulty) + "/" + "flashcard_" + to_string(nextID) + ".txt";
             ofstream new_file(new_file_path);
             cout << "created flashcard #" << nextID << " at" << new_file_path << "." <<endl;
             if (new_file.is_open()) {
@@ -163,6 +164,8 @@ private:
                 new_file << "Answer: " << answer << endl;
                 new_file.close();
             }
+            incrementID();
+            return nextID;
         }
     }
 
@@ -194,13 +197,13 @@ private:
         }
 
         if (new_difficulty != flashcard -> difficulty) {
-            string file_path = main_path + to_string(flashcard -> difficulty) + "\\" + "flashcard_" + to_string(ID) + ".txt";
+            string file_path = main_path + to_string(flashcard -> difficulty) + "/" + "flashcard_" + to_string(ID) + ".txt";
             remove(file_path.c_str());
             changeDifficulty(ID, new_difficulty);
         }
 
         // Overwrite flashcard file
-        string file_path = main_path + to_string(new_difficulty) + "\\" + "flashcard_" + to_string(ID) + ".txt";
+        string file_path = main_path + to_string(new_difficulty) + "/" + "flashcard_" + to_string(ID) + ".txt";
         ofstream file(file_path, ios::trunc);
         if (file.is_open()) {
             file << "ID: " << ID << endl;
@@ -241,7 +244,7 @@ private:
             get<1>(node -> data) = temp;
         }
 
-        string file_path = main_path + to_string(flashcard -> difficulty) + "\\" + "flashcard_" + to_string(ID) + ".txt";
+        string file_path = main_path + to_string(flashcard -> difficulty) + "/" + "flashcard_" + to_string(ID) + ".txt";
         if (remove(file_path.c_str()) != 0) {
             cerr << "[!!] Could not delete flashcard file #" << ID << "[!!]" << endl;
         }
@@ -323,7 +326,7 @@ public:
             addDifficulty(difficulty);
 
         // Check directory contents and push onto flashcard queue
-        string flash_path = diff_path + "\\flashcard_*.txt"; // '*' is a wildcard character that can represent any character possible
+        string flash_path = diff_path + "/flashcard_*.txt"; // '*' is a wildcard character that can represent any character possible
         _finddata_t file_info; // _finddata_t structure used for file & directory searching / file_info stores the file
         intptr_t handle = _findfirst(flash_path.c_str(), &file_info); // handle - reference used in programming to access system-managed resources
 
@@ -337,7 +340,7 @@ public:
                 // stoi - string to int | substr(<startpoint>, <size of str expected>) - gets a substr from a string
 
                 // Read flashcard file
-                string filepath = diff_path + "\\" + filename;
+                string filepath = diff_path + "/" + filename;
                 ifstream file(filepath);
                 if (file.is_open()) {
                     Flashcard flashcard = readFlashcardFile(file, id, difficulty);
@@ -361,19 +364,20 @@ public:
         cout << main_path << endl;
     }
 
-    void addInterface(QWidget* parent, int difficulty, QString question, QString answer, vector<QString> choices) {
-        bool run2;
+    int addInterface(QWidget* parent, int difficulty, QString question, QString answer, vector<QString> choices) {
+        int run2;
         run2 = addFlashcard(difficulty, question, answer[0].toLatin1(), choices);
-        if (!run2) {
+        if (run2 == -1) {
             QMessageBox::information(parent, "Error!", "Difficulty does not exist!");
         }
         else{
-            addFlashcard(difficulty, question, answer[0].toLatin1(), choices);
-            QString nextID = QString::number(getID());
+            QString nextID = QString::number(getID()-1);
             QMessageBox::information(parent, "Flashcard Added.", "Flashcard Details:\n\nDifficulty: " + QString::number(difficulty) + "\nFlashcard No." + nextID + "\nQuestion: " + question + "\nChoice A: " + choices[0] + "\nChoice B: " + choices[1] + "\nChoice C: " + choices[2] + "\nChoice D: " + choices[3] + "\nCorrect Answer: " + QString(answer));
-            incrementID();
+            return run2;
         }
     }
+
+    static const vector<int>& getAllFlashcardIDs
 
     void editInterface(QWidget* parent, int ID) {
         auto iterator = flashcardIDs.find(ID);
@@ -523,7 +527,7 @@ public:
             user_answers.pop();
         }
 
-        cout << "Your score is " << correct_answers << "\\" << size << "!\n";
+        cout << "Your score is " << correct_answers << "/" << size << "!\n";
         cout << "Enter any character to exit: ";
         cin >> ch;
     }

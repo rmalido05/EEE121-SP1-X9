@@ -39,19 +39,25 @@ template <> constexpr inline auto editFlashcardsDialog::qt_create_metaobjectdata
     namespace QMC = QtMocConstants;
     QtMocHelpers::StringRefStorage qt_stringData {
         "editFlashcardsDialog",
-        "on_comboBox_currentIndexChanged",
+        "addFlashcardToDropdown",
         "",
+        "newID",
+        "on_comboBox_currentIndexChanged",
         "index",
         "on_cancelButton_clicked"
     };
 
     QtMocHelpers::UintData qt_methods {
-        // Slot 'on_comboBox_currentIndexChanged'
-        QtMocHelpers::SlotData<void(int)>(1, 2, QMC::AccessPrivate, QMetaType::Void, {{
+        // Slot 'addFlashcardToDropdown'
+        QtMocHelpers::SlotData<void(int)>(1, 2, QMC::AccessPublic, QMetaType::Void, {{
             { QMetaType::Int, 3 },
         }}),
+        // Slot 'on_comboBox_currentIndexChanged'
+        QtMocHelpers::SlotData<void(int)>(4, 2, QMC::AccessPrivate, QMetaType::Void, {{
+            { QMetaType::Int, 5 },
+        }}),
         // Slot 'on_cancelButton_clicked'
-        QtMocHelpers::SlotData<void()>(4, 2, QMC::AccessPrivate, QMetaType::Void),
+        QtMocHelpers::SlotData<void()>(6, 2, QMC::AccessPrivate, QMetaType::Void),
     };
     QtMocHelpers::UintData qt_properties {
     };
@@ -75,8 +81,9 @@ void editFlashcardsDialog::qt_static_metacall(QObject *_o, QMetaObject::Call _c,
     auto *_t = static_cast<editFlashcardsDialog *>(_o);
     if (_c == QMetaObject::InvokeMetaMethod) {
         switch (_id) {
-        case 0: _t->on_comboBox_currentIndexChanged((*reinterpret_cast< std::add_pointer_t<int>>(_a[1]))); break;
-        case 1: _t->on_cancelButton_clicked(); break;
+        case 0: _t->addFlashcardToDropdown((*reinterpret_cast< std::add_pointer_t<int>>(_a[1]))); break;
+        case 1: _t->on_comboBox_currentIndexChanged((*reinterpret_cast< std::add_pointer_t<int>>(_a[1]))); break;
+        case 2: _t->on_cancelButton_clicked(); break;
         default: ;
         }
     }
@@ -101,14 +108,14 @@ int editFlashcardsDialog::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 2)
+        if (_id < 3)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 2;
+        _id -= 3;
     }
     if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 2)
+        if (_id < 3)
             *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
-        _id -= 2;
+        _id -= 3;
     }
     return _id;
 }

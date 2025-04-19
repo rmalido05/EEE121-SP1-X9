@@ -1,4 +1,5 @@
 #include "editflashcardsdialog.h"
+#include "addflashcardsdialog.h"
 #include "ui_editflashcardsdialog.h"
 #include "datastructures.h"
 
@@ -7,11 +8,23 @@ editFlashcardsDialog::editFlashcardsDialog(QWidget *parent)
     , ui(new Ui::editFlashcardsDialog)
 {
     ui->setupUi(this);
+    FlashcardInterface flashcard;
+    flashcard.initializer();
+
+    addFlashcardsDialog* addDialog = new addFlashcardsDialog(this);
+
+    connect(addDialog, &addFlashcardsDialog::flashcardAdded,
+            this, &editFlashcardsDialog::addFlashcardToDropdown);
+
 }
 
 editFlashcardsDialog::~editFlashcardsDialog()
 {
     delete ui;
+}
+
+void editFlashcardsDialog::addFlashcardToDropdown(int newID) {
+    ui -> input_ID -> addItem(QString::number(newID));
 }
 
 void editFlashcardsDialog::setFlashcardFields(const QString& question,
